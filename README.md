@@ -19,9 +19,9 @@ graph TD
     class B,C,D component;
 ```
 
-**End-to-End Walkthrough of `(\x. x * 2) 21`**:
-1. **Lexer**: Consumes the raw string and outputs a token stream: `[Lambda, Ident("x"), Dot, Ident("x"), Asterisk, Number(2), RParen, Number(21)]`.
-2. **Parser**: A recursive-descent parser consumes the tokens and builds the Abstract Syntax Tree. It outputs an `App` (Application) node containing a `Lambda` abstraction and an `Int(21)` primitive.
+**End-to-End Walkthrough of `((\x.(* x 2)) 21)`**:
+1. **Lexer**: Consumes the raw string and outputs a token stream: `[LParen, LParen, LambdaTok, Literal("x"), DotTok, LParen, Asterisk, Literal("x"), Number(2), RParen, RParen, Number(21), RParen]`.
+2. **Parser**: A recursive-descent parser consumes the tokens and builds the Abstract Syntax Tree. It outputs an `Application` node containing an `Abstraction` (lambda) and an `Int(21)` primitive.
 3. **Reducer**: The evaluation engine applies Call-By-Value (CBV) semantics. It substitutes `x` with `21` inside the lambda body using alpha-equivalence safe substitution, resulting in a `BinaryOp(Mul, Int(21), Int(2))`. It then performs the native Rust multiplication and returns `Int(42)`.
 
 ---
