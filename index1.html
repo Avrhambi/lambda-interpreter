@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercise 4 Solution – Programming Languages Principles</title>
+    <style>
+        @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+            @page { margin: 20mm; }
+        }
+        
+        body {
+            font-family: 'Times New Roman', serif;
+            max-width: 210mm;
+            margin: 20px auto;
+            padding: 20mm;
+            background: white;
+            line-height: 1.6;
+            color: #000;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 24pt;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            font-size: 18pt;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            color: #1a1a1a;
+        }
+        
+        h3 {
+            font-size: 14pt;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .math {
+            font-family: 'Cambria Math', 'Latin Modern Math', serif;
+            font-size: 11pt;
+            margin: 10px 0;
+            padding: 8px 15px;
+            background: #f9f9f9;
+            border-left: 3px solid #666;
+        }
+        
+        .step {
+            margin: 8px 0;
+        }
+        
+        .result {
+            font-weight: bold;
+            color: #000;
+        }
+        
+        p {
+            margin: 10px 0;
+            text-align: justify;
+        }
+        
+        .note {
+            background: #f0f0f0;
+            padding: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #999;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14pt;
+            margin: 20px auto;
+            display: block;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        ul, ol {
+            margin: 10px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <button class="no-print" onclick="window.print()">Print/Save as PDF</button>
+    
+    <h1>Exercise 4 Solution</h1>
+    
+    <h2>Part A: Lambda Calculus Computations</h2>
+    
+    <h3>Question 1: Lambda Expression Evaluation</h3>
+    
+    <p><strong>Expression 1:</strong> (λz. z) (λy. y y) (λx. x a)</p>
+    
+    <div class="math">
+        <div class="step">Perform beta reduction on (λz. z) with argument (λy. y y):</div>
+        <div class="step">[z ↦ (λy. y y)]z = (λy. y y)</div>
+        <div class="step"><br>Now we have: (λy. y y) (λx. x a)</div>
+        <div class="step">Perform another beta reduction:</div>
+        <div class="step">[y ↦ (λx. x a)](y y) = (λx. x a) (λx. x a)</div>
+        <div class="step"><br>Perform beta reduction on the left lambda:</div>
+        <div class="step">[x ↦ (λx. x a)](x a) = (λx. x a) a</div>
+        <div class="step"><br>Perform final reduction:</div>
+        <div class="step">[x ↦ a](x a) = <span class="result">a a</span></div>
+    </div>
+    
+    <p><strong>Expression 2:</strong> (λx. λy. x y y) (λa. a) b</p>
+    
+    <div class="math">
+        <div class="step">First reduction (substitute (λa. a) for x):</div>
+        <div class="step">(λy. (λa. a) y y) b</div>
+        <div class="step"><br>Internal reduction on (λa. a)y:</div>
+        <div class="step">(λy. y y) b</div>
+        <div class="step"><br>Final reduction:</div>
+        <div class="step"><span class="result">b b</span></div>
+    </div>
+    
+    <p><strong>Expression 3:</strong> (((λx. λy. (x y)) (λy. y)) w)</p>
+    
+    <div class="math">
+        <div class="step">First reduction (substitute (λy. y) for x):</div>
+        <div class="step">((λy. ((λy. y) y)) w)</div>
+        <div class="step"><br>Perform α-conversion on the internal bound variable to avoid confusion:</div>
+        <div class="step">(λy. (λz. z) y) w</div>
+        <div class="step"><br>Internal reduction:</div>
+        <div class="step">(λy. y) w</div>
+        <div class="step"><br>Final reduction:</div>
+        <div class="step"><span class="result">w</span></div>
+    </div>
+    
+    <p><strong>Expression 4:</strong> (λx. y) ((λy. y y y) (λx. x x x))</p>
+    
+    <div class="note">
+        <p><strong>Call-By-Value (CBV):</strong> In this strategy, we must reduce the argument to a value before substitution. The argument is ((λy. y y y) (λx. x x x)). Its reduction will yield (λx. x x x) (λx. x x x) (λx. x x x), and each additional step will only grow the expression. This is an infinite derivation (divergence), so the expression does not reach a value under CBV.</p>
+        
+        <p><strong>Call-By-Name (CBN):</strong> In this strategy, we substitute the argument as-is without evaluating it first.</p>
+    </div>
+    
+    <div class="math">
+        <div class="step">[x ↦ ((λy. y y y) (λx. x x x))] y = <span class="result">y</span></div>
+        <div class="step">The result is y.</div>
+    </div>
+    
+    <p><strong>Did we get the same result?</strong> No. In CBN we got y, and in CBV the computation did not terminate.</p>
+    
+    <h3>Question 2: Boolean Expressions</h3>
+    
+    <p><strong>Computing test (or tru fls) a b in CBV:</strong></p>
+    
+    <p>First, evaluate the argument or tru fls:</p>
+    
+    <div class="math">
+        <div class="step">or tru fls = (λb. λc. b tru c) tru fls → (λc. tru tru c) fls → tru tru fls</div>
+        <div class="step">tru tru fls = (λt. λf. t) tru fls → (λf. tru) fls → tru</div>
+    </div>
+    
+    <p>Now substitute into test:</p>
+    
+    <div class="math">
+        <div class="step">test tru a b = (λl. λm. λn. l m n) tru a b</div>
+        <div class="step">→ (λm. λn. tru m n) a b</div>
+        <div class="step">→ (λn. tru a n) b</div>
+        <div class="step">→ tru a b</div>
+        <div class="step"><br>Final evaluation:</div>
+        <div class="step">tru a b = (λt. λf. t) a b → (λf. a) b → <span class="result">a</span></div>
+    </div>
+    
+    <p><strong>Definition of nand:</strong></p>
+    
+    <div class="math">
+        <div class="step">nand = λb. λc. b (c fls tru) tru</div>
+    </div>
+    
+    <p><strong>Computing nand tru fls:</strong></p>
+    
+    <div class="math">
+        <div class="step">nand tru fls → tru (fls fls tru) tru → (λt. λf. t) (fls fls tru) tru</div>
+        <div class="step">→ fls fls tru → (λt. λf. f) fls tru → <span class="result">tru</span></div>
+    </div>
+    
+    <p><strong>Computing nand tru tru:</strong></p>
+    
+    <div class="math">
+        <div class="step">nand tru tru → tru (tru fls tru) tru</div>
+        <div class="step">→ tru fls tru → (λt. λf. t) fls tru → <span class="result">fls</span></div>
+    </div>
+    
+    <h3>Question 3: Arithmetic Expressions</h3>
+    
+    <p><strong>c₀ succ in CBN:</strong> c₀ ignores its first argument (the function) and returns the second.</p>
+    
+    <div class="math">
+        <div class="step">(λs. λz. z) succ → λz. z</div>
+    </div>
+    
+    <p>This is the identity function, which represents c₀ and not c₁.</p>
+    
+    <p><strong>c₀ succ in CBV:</strong> The result is the same. Since succ is a value (an abstraction), it is substituted for s, and the result is c₀.</p>
+    
+    <p><strong>Definition of isodd:</strong></p>
+    
+    <div class="math">
+        <div class="step">isodd = λm. m (λb. b fls tru) fls</div>
+    </div>
+    
+    <p><strong>Calculations:</strong></p>
+    <p>Let us define <strong>not = λb. b fls tru</strong> for clarity.</p>
+    
+    <p><strong>Calculating isodd c₄:</strong></p>
+    
+    <div class="math">
+        <div class="step">isodd c₄ → (λm. m not fls) c₄ → c₄ not fls</div>
+        <div class="step"><br>Substitute the definition of c₄:</div>
+        <div class="step">→ (λs. λz. s(s(s(s z)))) not fls</div>
+        <div class="step">→ (λz. not(not(not(not z)))) fls</div>
+        <div class="step">→ not(not(not(not fls)))</div>
+    </div>
+    
+    <p><em>Reduction steps:</em></p>
+    <ol>
+        <li>not fls → (λb. b fls tru) fls → fls fls tru → tru</li>
+        <li>not tru → (λb. b fls tru) tru → tru fls tru → fls</li>
+    </ol>
+    
+    <p><em>Back to the expression:</em></p>
+    
+    <div class="math">
+        <div class="step">not(not(not(not fls))) → not(not(not tru)) → not(not fls)</div>
+        <div class="step">→ not tru → <span class="result">fls</span></div>
+    </div>
+    
+    <p><strong>Result:</strong> fls (Correct, since 4 is even).</p>
+    
+    <p><strong>Calculating isodd c₅:</strong></p>
+    
+    <div class="math">
+        <div class="step">isodd c₅ → (λm. m not fls) c₅ → c₅ not fls</div>
+        <div class="step">→ (λs. λz. s(s(s(s(s z))))) not fls</div>
+        <div class="step">→ not(not(not(not(not fls))))</div>
+    </div>
+    
+    <p><em>Using the reduction logic established above:</em></p>
+    
+    <div class="math">
+        <div class="step">→ not(not(not(not tru)))</div>
+        <div class="step">→ not(not(not fls))</div>
+        <div class="step">→ not(not tru)</div>
+        <div class="step">→ not fls</div>
+        <div class="step">→ <span class="result">tru</span></div>
+    </div>
+    
+    <p><strong>Result:</strong> tru (Correct, since 5 is odd).</p>
+    
+    <h3>Question 4: Y Combinator</h3>
+    
+    <p><strong>Computing fact c₀:</strong></p>
+    
+    <p>According to the definition given in the practice, the function uses eq n c₁ as the base case. Since 0 ≠ 1, the code enters the "else" branch where it attempts to calculate times c₀ (fact (pred c₀)).</p>
+    
+    <p>Since pred c₀ evaluates to c₀, we get c₀ × fact(c₀), which recursively calls fact c₀ again. This leads to an infinite loop. Therefore, the requirement 0! = 1 is not satisfied.</p>
+    
+    <p><strong>Fix:</strong></p>
+    
+    <p>We change the stopping condition to check if the number is c₀ explicitly using iszero.</p>
+    
+    <div class="math">
+        <div class="step">help_fact_fixed = λf. λn. test (iszero n) c₁ (times n (f (pred n)))</div>
+    </div>
+    
+    <button class="no-print" onclick="window.print()">Print/Save as PDF</button>
+</body>
+</html>
