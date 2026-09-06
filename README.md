@@ -15,7 +15,7 @@ graph TD
     C -->|"AST (Term)"| D(Reducer)
     D -->|"Evaluated AST"| E["Display / Output"]
     
-    classDef component fill:#bbdefb,stroke:#333,stroke-width:2px;
+    classDef component fill:#1976D2,color:#fff,stroke:#333,stroke-width:2px;
     class B,C,D component;
 ```
 
