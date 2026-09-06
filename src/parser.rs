@@ -1,6 +1,26 @@
 use std::fmt;
 use crate::lexer::Token;
 
+/// Supported binary operators.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Operator {
+    Add,
+    Sub,
+    Mul,
+    Eq,
+}
+
+impl fmt::Display for Operator {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Operator::Add => write!(f, "+"),
+            Operator::Sub => write!(f, "-"),
+            Operator::Mul => write!(f, "*"),
+            Operator::Eq => write!(f, "=="),
+        }
+    }
+}
+
 /// AST for lambda expressions.
 /// Using Box<Term> because Rust requires recursive types to have a known size.
 #[derive(Debug, Clone, PartialEq)]
@@ -8,6 +28,10 @@ pub enum Term {
     Variable(String),
     Abstraction(String, Box<Term>),
     Application(Box<Term>, Box<Term>),
+    Int(i32),
+    Bool(bool),
+    BinaryOp(Operator, Box<Term>, Box<Term>),
+    IfElse(Box<Term>, Box<Term>, Box<Term>),
 }
 
 /// Implementation of Display for pretty printing the terms.
@@ -17,6 +41,10 @@ impl fmt::Display for Term {
             Term::Variable(s) => write!(f, "{}", s),
             Term::Abstraction(s, t) => write!(f, "(\\{}.{})", s, t),
             Term::Application(t1, t2) => write!(f, "({} {})", t1, t2),
+            Term::Int(i) => write!(f, "{}", i),
+            Term::Bool(b) => write!(f, "{}", b),
+            Term::BinaryOp(op, t1, t2) => write!(f, "({} {} {})", t1, op, t2),
+            Term::IfElse(cond, t1, t2) => write!(f, "if {} then {} else {}", cond, t1, t2),
         }
     }
 }

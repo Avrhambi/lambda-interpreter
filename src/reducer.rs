@@ -19,7 +19,8 @@ fn fv(t: &Term) -> HashSet<String> {
             let s1 = fv(t1);
             let s2 = fv(t2);
             s1.union(&s2).cloned().collect()
-        }
+        },
+        _ => HashSet::new(),
     }
 }
 
@@ -54,7 +55,8 @@ fn substitute(x: &str, t1: &Term, t2: &Term) -> Term {
                 let new_body = substitute(y, &Term::Variable(z.clone()), body);
                 Term::Abstraction(z, Box::new(substitute(x, t1, &new_body)))
             }
-        }
+        },
+        _ => t2.clone(),
     }
 }
 
