@@ -4,7 +4,7 @@ mod parser;
 mod reducer;
 
 use parser::{Term, parse};
-use reducer::{reduce_cbv, reduce_cbn};
+use reducer::reduce_cbv;
 
 fn evaluate(reduce_func: fn(&Term) -> Option<Term>, t: Term) {
     println!("{}", t);
@@ -27,9 +27,10 @@ fn main() {
         io::stdout().flush().unwrap();
 
         let mut input = String::new();
-        if io::stdin().read_line(&mut input).is_err() {
-            println!("Error reading input");
-            continue;
+        let bytes_read = io::stdin().read_line(&mut input);
+        if bytes_read.is_err() || bytes_read.unwrap() == 0 {
+            println!("Goodbye!");
+            break;
         }
 
         let input = input.trim();
@@ -49,8 +50,8 @@ fn main() {
 
         match result {
             Ok(ast) => {
-                println!("\nEvaluating (Call-by-Name):");
-                evaluate(reduce_cbn, ast);
+                println!("\nEvaluating (Call-by-Value):");
+                evaluate(reduce_cbv, ast);
             },
             Err(_) => println!("Parse Error: Please check your syntax and try again."),
         }

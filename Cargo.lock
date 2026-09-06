@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "EX4"
+name = "lambda-calculus-interpreter"
 version = "0.1.0"
