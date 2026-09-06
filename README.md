@@ -10,10 +10,10 @@ The interpreter operates in a classic compilation/evaluation pipeline. The REPL 
 
 ```mermaid
 graph TD
-    A[REPL / Input String] -->|Raw Text| B(Lexer)
-    B -->|Vec<Token>| C(Parser)
-    C -->|AST (Term)| D(Reducer)
-    D -->|Evaluated AST| E[Display / Output]
+    A["REPL / Input String"] -->|"Raw Text"| B(Lexer)
+    B -->|"Vec<Token>"| C(Parser)
+    C -->|"AST (Term)"| D(Reducer)
+    D -->|"Evaluated AST"| E["Display / Output"]
     
     classDef component fill:#f9f,stroke:#333,stroke-width:2px;
     class B,C,D component;
