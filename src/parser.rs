@@ -63,7 +63,26 @@ pub fn parse(input: &str) -> Term {
 fn parse_term(tokens: &[Token]) -> (Term, &[Token]) {
     match tokens.first() {
         None => panic!("Tokens expected"),
+        Some(Token::Number(n)) => (Term::Int(*n), &tokens[1..]),
+        Some(Token::TrueTok) => (Term::Bool(true), &tokens[1..]),
+        Some(Token::FalseTok) => (Term::Bool(false), &tokens[1..]),
         Some(Token::Literal(id)) => (Term::Variable(id.clone()), &tokens[1..]),
+        Some(Token::IfTok) => {
+            let (cond, after_cond) = parse_term(&tokens[1..]);
+            match after_cond.first() {
+                Some(Token::ThenTok) => {
+                    let (t_branch, after_t) = parse_term(&after_cond[1..]);
+                    match after_t.first() {
+                        Some(Token::ElseTok) => {
+                            let (f_branch, after_f) = parse_term(&after_t[1..]);
+                            (Term::IfElse(Box::new(cond), Box::new(t_branch), Box::new(f_branch)), after_f)
+                        },
+                        _ => panic!("ElseTok expected"),
+                    }
+                },
+                _ => panic!("ThenTok expected"),
+            }
+        },
         Some(Token::LParen) => {
             let rest = &tokens[1..];
             // Lookahead: Check if it's a Lambda: (\x.t)
@@ -77,6 +96,27 @@ fn parse_term(tokens: &[Token]) -> (Term, &[Token]) {
                             },
                             _ => panic!("RParen expected after lambda body"),
                         }
+                    }
+                }
+            }
+            
+            // Lookahead: Check if it's a binary operator: (+ t1 t2)
+            if let Some(op_tok) = rest.first() {
+                let op = match op_tok {
+                    Token::Plus => Some(Operator::Add),
+                    Token::Minus => Some(Operator::Sub),
+                    Token::Asterisk => Some(Operator::Mul),
+                    Token::Equals => Some(Operator::Eq),
+                    _ => None,
+                };
+                if let Some(operator) = op {
+                    let (t1, after_t1) = parse_term(&rest[1..]);
+                    let (t2, after_t2) = parse_term(after_t1);
+                    match after_t2.first() {
+                        Some(Token::RParen) => {
+                            return (Term::BinaryOp(operator, Box::new(t1), Box::new(t2)), &after_t2[1..]);
+                        },
+                        _ => panic!("RParen expected after binary op"),
                     }
                 }
             }
