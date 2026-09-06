@@ -20,6 +20,17 @@ fn fv(t: &Term) -> HashSet<String> {
             let s2 = fv(t2);
             s1.union(&s2).cloned().collect()
         },
+        Term::BinaryOp(_, t1, t2) => {
+            let s1 = fv(t1);
+            let s2 = fv(t2);
+            s1.union(&s2).cloned().collect()
+        },
+        Term::IfElse(cond, t1, t2) => {
+            let mut s = fv(cond);
+            s.extend(fv(t1));
+            s.extend(fv(t2));
+            s
+        },
         _ => HashSet::new(),
     }
 }
@@ -56,7 +67,28 @@ fn substitute(x: &str, t1: &Term, t2: &Term) -> Term {
                 Term::Abstraction(z, Box::new(substitute(x, t1, &new_body)))
             }
         },
+        Term::BinaryOp(op, left, right) => {
+            Term::BinaryOp(
+                op.clone(),
+                Box::new(substitute(x, t1, left)),
+                Box::new(substitute(x, t1, right))
+            )
+        },
+        Term::IfElse(cond, t_branch, f_branch) => {
+            Term::IfElse(
+                Box::new(substitute(x, t1, cond)),
+                Box::new(substitute(x, t1, t_branch)),
+                Box::new(substitute(x, t1, f_branch))
+            )
+        },
         _ => t2.clone(),
+    }
+}
+
+fn is_value(t: &Term) -> bool {
+    match t {
+        Term::Abstraction(_, _) | Term::Int(_) | Term::Bool(_) => true,
+        _ => false,
     }
 }
 
@@ -66,19 +98,51 @@ pub fn reduce_cbv(t: &Term) -> Option<Term> {
         
         Term::Application(t1, t2) => {
             if let Term::Abstraction(x, body) = &**t1 {
-                if let Term::Abstraction(_, _) = &**t2 {
+                if is_value(t2) {
                     return Some(substitute(x, t2, body));
                 }
             }      
             if let Some(t1_prime) = reduce_cbv(t1) {
                 return Some(Term::Application(Box::new(t1_prime), t2.clone()));
             }      
-            if let Term::Abstraction(_, _) = &**t1 {
+            if is_value(t1) {
                 if let Some(t2_prime) = reduce_cbv(t2) {
                     return Some(Term::Application(t1.clone(), Box::new(t2_prime)));
                 }
             }
             None
+        },
+        Term::BinaryOp(op, t1, t2) => {
+            if let Some(t1_prime) = reduce_cbv(t1) {
+                return Some(Term::BinaryOp(op.clone(), Box::new(t1_prime), t2.clone()));
+            }
+            if let Some(t2_prime) = reduce_cbv(t2) {
+                return Some(Term::BinaryOp(op.clone(), t1.clone(), Box::new(t2_prime)));
+            }
+            if let (Term::Int(n1), Term::Int(n2)) = (&**t1, &**t2) {
+                match op {
+                    crate::parser::Operator::Add => Some(Term::Int(n1 + n2)),
+                    crate::parser::Operator::Sub => Some(Term::Int(n1 - n2)),
+                    crate::parser::Operator::Mul => Some(Term::Int(n1 * n2)),
+                    crate::parser::Operator::Eq => Some(Term::Bool(n1 == n2)),
+                }
+            } else {
+                None
+            }
+        },
+        Term::IfElse(cond, t1, t2) => {
+            if let Some(cond_prime) = reduce_cbv(cond) {
+                return Some(Term::IfElse(Box::new(cond_prime), t1.clone(), t2.clone()));
+            }
+            if let Term::Bool(b) = &**cond {
+                if *b {
+                    Some(*t1.clone())
+                } else {
+                    Some(*t2.clone())
+                }
+            } else {
+                None
+            }
         },
         _ => None, 
     }
@@ -96,6 +160,38 @@ pub fn reduce_cbn(t: &Term) -> Option<Term> {
                 return Some(Term::Application(Box::new(t1_prime), t2.clone()));
             }
             None
+        },
+        Term::BinaryOp(op, t1, t2) => {
+            if let Some(t1_prime) = reduce_cbn(t1) {
+                return Some(Term::BinaryOp(op.clone(), Box::new(t1_prime), t2.clone()));
+            }
+            if let Some(t2_prime) = reduce_cbn(t2) {
+                return Some(Term::BinaryOp(op.clone(), t1.clone(), Box::new(t2_prime)));
+            }
+            if let (Term::Int(n1), Term::Int(n2)) = (&**t1, &**t2) {
+                match op {
+                    crate::parser::Operator::Add => Some(Term::Int(n1 + n2)),
+                    crate::parser::Operator::Sub => Some(Term::Int(n1 - n2)),
+                    crate::parser::Operator::Mul => Some(Term::Int(n1 * n2)),
+                    crate::parser::Operator::Eq => Some(Term::Bool(n1 == n2)),
+                }
+            } else {
+                None
+            }
+        },
+        Term::IfElse(cond, t1, t2) => {
+            if let Some(cond_prime) = reduce_cbn(cond) {
+                return Some(Term::IfElse(Box::new(cond_prime), t1.clone(), t2.clone()));
+            }
+            if let Term::Bool(b) = &**cond {
+                if *b {
+                    Some(*t1.clone())
+                } else {
+                    Some(*t2.clone())
+                }
+            } else {
+                None
+            }
         },
         _ => None,
     }
