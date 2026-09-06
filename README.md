@@ -89,3 +89,11 @@ Inside the REPL, try:
 ```
 
 ---
+
+## 6. CI/CD & Quality Gate
+
+The repository uses a fully automated GitHub Actions pipeline (`.github/workflows/ci.yml`) that runs on every push and pull request to the `master` branch. It automatically executes:
+1. `cargo fmt -- --check` (Syntax formatting)
+2. `cargo clippy -- -D warnings` (Strict linting)
+3. `cargo build`
+4. `cargo test`
