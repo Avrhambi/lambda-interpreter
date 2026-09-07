@@ -22,7 +22,6 @@ impl fmt::Display for Operator {
 }
 
 /// AST for lambda expressions.
-/// Using Box<Term> because Rust requires recursive types to have a known size.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Term {
     Variable(String),
@@ -34,7 +33,6 @@ pub enum Term {
     IfElse(Box<Term>, Box<Term>, Box<Term>),
 }
 
-/// Implementation of Display for pretty printing the terms.
 impl fmt::Display for Term {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -49,24 +47,32 @@ impl fmt::Display for Term {
     }
 }
 
-/// Main parse function exposed to other modules.
 pub fn parse(input: &str) -> Term {
     let tokens = crate::lexer::tokenize(input);
     let (term, remaining) = parse_term(&tokens);
     if !remaining.is_empty() {
-        panic!("Unexpected input at end of string");
+        panic!("Unexpected input at end of string: {:?}", remaining);
     }
     term
 }
 
-/// Recursive helper function to parse terms from a slice of tokens.
 fn parse_term(tokens: &[Token]) -> (Term, &[Token]) {
     match tokens.first() {
-        None => panic!("Tokens expected"),
-        Some(Token::Number(n)) => (Term::Int(*n), &tokens[1..]),
-        Some(Token::TrueTok) => (Term::Bool(true), &tokens[1..]),
-        Some(Token::FalseTok) => (Term::Bool(false), &tokens[1..]),
-        Some(Token::Literal(id)) => (Term::Variable(id.clone()), &tokens[1..]),
+        Some(Token::LetTok) => {
+            if let Some(Token::Literal(id)) = tokens.get(1) {
+                if let Some(Token::EqTok) = tokens.get(2) {
+                    let (t1, after_t1) = parse_term(&tokens[3..]);
+                    match after_t1.first() {
+                        Some(Token::InTok) => {
+                            let (t2, after_t2) = parse_term(&after_t1[1..]);
+                            let lambda = Term::Abstraction(id.clone(), Box::new(t2));
+                            (Term::Application(Box::new(lambda), Box::new(t1)), after_t2)
+                        },
+                        _ => panic!("InTok expected"),
+                    }
+                } else { panic!("EqTok expected"); }
+            } else { panic!("Literal expected after Let"); }
+        }
         Some(Token::IfTok) => {
             let (cond, after_cond) = parse_term(&tokens[1..]);
             match after_cond.first() {
@@ -83,75 +89,82 @@ fn parse_term(tokens: &[Token]) -> (Term, &[Token]) {
                 _ => panic!("ThenTok expected"),
             }
         },
+        Some(Token::LambdaTok) => {
+            if let Some(Token::Literal(id)) = tokens.get(1) {
+                if let Some(Token::DotTok) = tokens.get(2) {
+                    let (body, after_body) = parse_term(&tokens[3..]);
+                    (Term::Abstraction(id.clone(), Box::new(body)), after_body)
+                } else { panic!("DotTok expected after variable in lambda"); }
+            } else { panic!("Literal expected after LambdaTok"); }
+        }
+        _ => parse_eq(tokens)
+    }
+}
+
+fn parse_eq(tokens: &[Token]) -> (Term, &[Token]) {
+    let (mut left, mut rest) = parse_add(tokens);
+    while let Some(Token::Equals) = rest.first() {
+        let (right, next_rest) = parse_add(&rest[1..]);
+        left = Term::BinaryOp(Operator::Eq, Box::new(left), Box::new(right));
+        rest = next_rest;
+    }
+    (left, rest)
+}
+
+fn parse_add(tokens: &[Token]) -> (Term, &[Token]) {
+    let (mut left, mut rest) = parse_mul(tokens);
+    while let Some(tok) = rest.first() {
+        let op = match tok {
+            Token::Plus => Operator::Add,
+            Token::Minus => Operator::Sub,
+            _ => break,
+        };
+        let (right, next_rest) = parse_mul(&rest[1..]);
+        left = Term::BinaryOp(op, Box::new(left), Box::new(right));
+        rest = next_rest;
+    }
+    (left, rest)
+}
+
+fn parse_mul(tokens: &[Token]) -> (Term, &[Token]) {
+    let (mut left, mut rest) = parse_app(tokens);
+    while let Some(Token::Asterisk) = rest.first() {
+        let (right, next_rest) = parse_app(&rest[1..]);
+        left = Term::BinaryOp(Operator::Mul, Box::new(left), Box::new(right));
+        rest = next_rest;
+    }
+    (left, rest)
+}
+
+fn parse_app(tokens: &[Token]) -> (Term, &[Token]) {
+    let (mut left, mut rest) = parse_primary(tokens);
+    
+    while let Some(tok) = rest.first() {
+        match tok {
+            Token::Number(_) | Token::TrueTok | Token::FalseTok | Token::Literal(_) | Token::LParen => {
+                let (right, next_rest) = parse_primary(rest);
+                left = Term::Application(Box::new(left), Box::new(right));
+                rest = next_rest;
+            },
+            _ => break,
+        }
+    }
+    (left, rest)
+}
+
+fn parse_primary(tokens: &[Token]) -> (Term, &[Token]) {
+    match tokens.first() {
+        Some(Token::Number(n)) => (Term::Int(*n), &tokens[1..]),
+        Some(Token::TrueTok) => (Term::Bool(true), &tokens[1..]),
+        Some(Token::FalseTok) => (Term::Bool(false), &tokens[1..]),
+        Some(Token::Literal(id)) => (Term::Variable(id.clone()), &tokens[1..]),
         Some(Token::LParen) => {
-            let rest = &tokens[1..];
-            // Lookahead: Check if it's a Lambda: (\x.t)
-            if let Some(Token::LambdaTok) = rest.first() {
-                if let Some(Token::Literal(id)) = rest.get(1) {
-                    if let Some(Token::DotTok) = rest.get(2) {
-                        let (body, after_body) = parse_term(&rest[3..]);
-                        match after_body.first() {
-                            Some(Token::RParen) => {
-                                return (Term::Abstraction(id.clone(), Box::new(body)), &after_body[1..]);
-                            },
-                            _ => panic!("RParen expected after lambda body"),
-                        }
-                    }
-                }
-            }
-            
-            // Lookahead: Check if it's a binary operator: (+ t1 t2)
-            if let Some(op_tok) = rest.first() {
-                let op = match op_tok {
-                    Token::Plus => Some(Operator::Add),
-                    Token::Minus => Some(Operator::Sub),
-                    Token::Asterisk => Some(Operator::Mul),
-                    Token::Equals => Some(Operator::Eq),
-                    _ => None,
-                };
-                if let Some(operator) = op {
-                    let (t1, after_t1) = parse_term(&rest[1..]);
-                    let (t2, after_t2) = parse_term(after_t1);
-                    match after_t2.first() {
-                        Some(Token::RParen) => {
-                            return (Term::BinaryOp(operator, Box::new(t1), Box::new(t2)), &after_t2[1..]);
-                        },
-                        _ => panic!("RParen expected after binary op"),
-                    }
-                }
-            }
-            
-            // Standard application or parenthesized term
-            let (t1, after_t1) = parse_term(rest);
-            match after_t1.first() {
-                Some(Token::RParen) => (t1, &after_t1[1..]), // Just parens (t)
-                _ => {
-                    let (t2, after_t2) = parse_term(after_t1);
-                    match after_t2.first() {
-                        Some(Token::RParen) => {
-                            (Term::Application(Box::new(t1), Box::new(t2)), &after_t2[1..])
-                        },
-                        _ => panic!("RParen expected after application"),
-                    }
-                }
+            let (term, rest) = parse_term(&tokens[1..]);
+            match rest.first() {
+                Some(Token::RParen) => (term, &rest[1..]),
+                _ => panic!("RParen expected, got {:?}", rest.first()),
             }
         },
-        Some(Token::LetTok) => {
-            // Sugar: let id = t1 in t2  ==>  ((\id.t2) t1)
-            if let Some(Token::Literal(id)) = tokens.get(1) {
-                if let Some(Token::EqTok) = tokens.get(2) {
-                    let (t1, after_t1) = parse_term(&tokens[3..]);
-                    match after_t1.first() {
-                        Some(Token::InTok) => {
-                            let (t2, after_t2) = parse_term(&after_t1[1..]);
-                            let lambda = Term::Abstraction(id.clone(), Box::new(t2));
-                            (Term::Application(Box::new(lambda), Box::new(t1)), after_t2)
-                        },
-                        _ => panic!("InTok expected"),
-                    }
-                } else { panic!("EqTok expected"); }
-            } else { panic!("Literal expected after Let"); }
-        }
-        _ => panic!("Unexpected token"),
+        _ => panic!("Unexpected token in primary: {:?}", tokens.first()),
     }
 }

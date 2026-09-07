@@ -80,23 +80,23 @@ cargo run
 
 Inside the REPL, try:
 ```text
-> let x = 5 in (+ x 10)
+> let x = 5 in x + 10
 15
 # In standard lambda calculus: (λx. x + 10) 5
 
-> if true then 1 else 0
+> if 5 == 5 then 1 else 0
 1
 # In standard lambda calculus (with Church booleans): (λt.λf. t) 1 0
 
-> ((\x. (* x 2)) 21)
+> (\x. x * 2) 21
 42
 # In standard lambda calculus: (λx. x * 2) 21
 
-> let x = 5 in (let y = 10 in (+ x y))
+> let x = 5 in let y = 10 in x + y
 15
 # In standard lambda calculus: (λx. (λy. x + y) 10) 5
 
-> (((\f. (\x. (f (f x)))) (\y. (+ y 1))) 0)
+> (\f. \x. f (f x)) (\y. y + 1) 0
 2
 # Applying a function twice (Church numeral 2 applied to a successor function and 0)
 # In standard lambda calculus: (λf. λx. f (f x)) (λy. y + 1) 0
