@@ -1,7 +1,8 @@
 # Lambda Calculus Interpreter (Micro-Lisp)
----
+
 A strict, call-by-value functional programming language interpreter featuring native primitives, first-class functions, and a robust Read-Eval-Print Loop (REPL), built in Rust for memory safety and zero-cost abstractions. It is based on the formal system of [Lambda calculus](https://en.wikipedia.org/wiki/Lambda_calculus).
 Originally an assignment, part of CS degree at Bar Ilan university; 
+
 ---
 
 ## 1. System Architecture & Flow
