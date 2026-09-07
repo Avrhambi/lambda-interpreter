@@ -19,8 +19,8 @@ graph TD
     class B,C,D component;
 ```
 
-**End-to-End Walkthrough of `((\x.(* x 2)) 21)`**:
-1. **Lexer**: Consumes the raw string and outputs a token stream: `[LParen, LParen, LambdaTok, Literal("x"), DotTok, LParen, Asterisk, Literal("x"), Number(2), RParen, RParen, Number(21), RParen]`.
+**End-to-End Walkthrough of `(\x. x * 2) 21`**:
+1. **Lexer**: Consumes the raw string and outputs a token stream: `[LParen, LambdaTok, Literal("x"), DotTok, Literal("x"), Asterisk, Number(2), RParen, Number(21)]`.
 2. **Parser**: A recursive-descent parser consumes the tokens and builds the Abstract Syntax Tree. It outputs an `Application` node containing an `Abstraction` (lambda) and an `Int(21)` primitive.
 3. **Reducer**: The evaluation engine applies Call-By-Value (CBV) semantics. It substitutes `x` with `21` inside the lambda body using alpha-equivalence safe substitution, resulting in a `BinaryOp(Mul, Int(21), Int(2))`. It then performs the native Rust multiplication and returns `Int(42)`.
 
@@ -32,7 +32,7 @@ graph TD
 | :--- | :--- | :--- |
 | **Core Language** | **Rust** | Chosen for its algebraic data types (`enum`) and exhaustive pattern matching, which are uniquely suited for AST traversal and reducer logic. Provides memory safety without a garbage collector. |
 | **Lexical Analysis** | **Custom Tokenizer** | Hand-written string scanning using `peek()` lookaheads. We chose this over a regex lexer crate (like `logos`) to eliminate external dependencies and maintain fine-grained control over multi-character operator edge cases (e.g., `=` vs `==`). |
-| **Parser** | **Recursive Descent** | A hand-rolled, prefix-notation recursive descent parser. We accepted the verbosity of a hand-written parser over a generator (like `LALRPOP` or `pest`) to keep the compilation pipeline transparent and easier to debug. |
+| **Parser** | **Recursive Descent** | A hand-rolled recursive descent parser handling standard lambda calculus operator precedence. We accepted the verbosity of a hand-written parser over a generator (like `LALRPOP` or `pest`) to keep the compilation pipeline transparent and easier to debug. |
 | **Evaluation Strategy** | **Call-by-Value (CBV)** | We opted for strict evaluation rather than lazy evaluation (Call-by-Name) to align with standard modern programming languages like Python and Rust itself, avoiding the memory overhead of deeply nested thunks. |
 
 ---
